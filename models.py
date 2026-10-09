@@ -1,17 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, ForeignKey, Table, func
+from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import date, datetime
-
-reader_books = Table(
-    "reader_books",
-    Base.metadata,
-    Column("id", Integer, primary_key=True),
-    Column("reader_id", Integer, ForeignKey("readers.id")),
-    Column("book_id", Integer, ForeignKey("books.id")),
-    Column("taken_at", Date, nullable=False),
-    Column("returned_at", Date, nullable=True),
-)
 
 class Book(Base):
     __tablename__ = "books"
@@ -22,7 +12,7 @@ class Book(Base):
     year = Column(Integer, nullable=True)
     genre = Column(String, nullable=True)
     available_copies = Column(Integer, default=1)
-    readers = relationship("Reader", secondary=reader_books, back_populates="books")
+    loans = relationship("Loan", back_populates="book")
 
 class Reader(Base):
     __tablename__ = "readers"
@@ -31,20 +21,25 @@ class Reader(Base):
     email = Column(String, unique=True, nullable=False)
     phone = Column(String, nullable=True)
     registration_date = Column(Date, default=date.today)
-    books = relationship("Book", secondary=reader_books, back_populates="readers")
+    loans = relationship("Loan", back_populates="reader")
+
+class Loan(Base):
+    __tablename__ = "loans"
+    id = Column(Integer, primary_key=True)
+    reader_id = Column(Integer, ForeignKey("readers.id"), nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
+    taken_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    returned_at = Column(DateTime, nullable=True)
+    reader = relationship("Reader", back_populates="loans")
+    book = relationship("Book", back_populates="loans")
 
 class User(Base):
-    def verify_password(self, plain_password: str) -> bool:
-        from auth import verify_password
-        return verify_password(plain_password, self.password_hash)
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    role = Column(String, default="librarian") 
+    role = Column(String, default="librarian")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-  
-

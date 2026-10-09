@@ -10,6 +10,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, login_data.username, login_data.password)
     if not user:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
     return Token(access_token=access_token)
