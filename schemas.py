@@ -1,8 +1,6 @@
-
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
-
 
 class UserBase(BaseModel):
     username: str
@@ -10,7 +8,7 @@ class UserBase(BaseModel):
     role: str = "librarian"
 
 class UserCreate(UserBase):
-    password: str 
+    password: str = Field(..., min_length=6)
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -38,3 +36,7 @@ class TokenData(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=6)
