@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, ForeignKey, Table, func
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import date
+from datetime import date, datetime
 
 reader_books = Table(
     "reader_books",
@@ -32,3 +32,19 @@ class Reader(Base):
     phone = Column(String, nullable=True)
     registration_date = Column(Date, default=date.today)
     books = relationship("Book", secondary=reader_books, back_populates="readers")
+
+class User(Base):
+    def verify_password(self, plain_password: str) -> bool:
+        from auth import verify_password
+        return verify_password(plain_password, self.password_hash)
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="librarian") 
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+  
+
