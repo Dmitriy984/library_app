@@ -1,20 +1,40 @@
-from pydantic import BaseModel
-from typing import List, Optional
 
-class Book(BaseModel):
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import datetime
+
+
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+    role: str = "librarian"
+
+class UserCreate(UserBase):
+    password: str 
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class UserResponse(UserBase):
     id: int
-    title: str
-    author: str
-    year: int
+    is_active: bool
+    created_at: datetime
+    reader_id: Optional[int] = None
+    class Config:
+        from_attributes = True
 
-class Reader(BaseModel):
-    id: int
-    name: str
-    reading_history: List[int]
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
-class BookDetail(Book):
-    is_available: bool
-    reader_name: Optional[str]
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
 
-class ReaderProfile(Reader):
-    reading_history: List[Book]
+class LoginRequest(BaseModel):
+    username: str
+    password: str

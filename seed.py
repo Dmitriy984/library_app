@@ -1,8 +1,8 @@
-
 from database import engine, Base, SessionLocal
-from models import Book, Reader, reader_books
-from data import BOOKS_DATA, READERS_DATA, HISTORY_DATA
+from models import Book, Reader, User, reader_books
+from data import BOOKS_DATA, READERS_DATA, HISTORY_DATA, USERS_DATA
 from datetime import date
+from auth import get_password_hash
 
 def seed():
     Base.metadata.create_all(bind=engine)
@@ -11,15 +11,17 @@ def seed():
         db.execute(reader_books.delete())
         db.query(Book).delete()
         db.query(Reader).delete()
+        db.query(User).delete()
         db.commit()
 
         for item in BOOKS_DATA:
-            book = Book(**item)
-            db.add(book)
+            db.add(Book(**item))
         db.commit()
 
         for item in READERS_DATA:
-            reader = Reader(full_name=item["full_name"], email=item["email"], phone=item["phone"],
+            reader = Reader(full_name=item["full_name"],
+                            email=item["email"],
+                            phone=item["phone"],
                             registration_date=date.fromisoformat(item["registration_date"]))
             db.add(reader)
         db.commit()
@@ -33,6 +35,16 @@ def seed():
                 taken_at=taken,
                 returned_at=returned
             ))
+        db.commit()
+
+        for u in USERS_DATA:
+            user = User(
+                username=u["username"],
+                email=u["email"],
+                password_hash=get_password_hash(u["password"]),
+                role=u["role"]
+            )
+            db.add(user)
         db.commit()
     finally:
         db.close()
