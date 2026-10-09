@@ -9,74 +9,46 @@ from dependencies.auth_deps import get_librarian_user, get_admin_user
 router = APIRouter(prefix="/readers", tags=["readers"])
 
 @router.get("/", response_model=List[ReaderSchema])
-async def get_readers(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_librarian_user)
-):
+async def get_readers(db: Session = Depends(get_db), _=Depends(get_librarian_user)):
     return db.query(Reader).all()
 
 @router.get("/{reader_id}", response_model=ReaderProfile)
-async def get_reader_profile(
-    reader_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_librarian_user)
-):
+async def get_reader_profile(reader_id: int, db: Session = Depends(get_db), _=Depends(get_librarian_user)):
     reader = db.query(Reader).filter(Reader.id == reader_id).first()
     if not reader:
-        raise HTTPException(status_code=404, detail="Reader not found")
-    
-    history_books = (
+        raise HTTPException(404, "Reader not found")
+    books_read = (
         db.query(Book)
         .join(reader_books, Book.id == reader_books.c.book_id)
         .filter(reader_books.c.reader_id == reader_id)
         .all()
     )
     return ReaderProfile(
-        id=reader.id,
-        full_name=reader.full_name,
-        email=reader.email,
-        phone=reader.phone,
-        registration_date=reader.registration_date,
-        reading_history=[BookSchema.from_orm(b) for b in history_books]
+        id=reader.id, full_name=reader.full_name, email=reader.email,
+        phone=reader.phone, registration_date=reader.registration_date,
+        reading_history=[BookSchema.from_orm(b) for b in books_read]
     )
 
 @router.post("/", response_model=ReaderSchema)
-async def create_reader(
-    reader_data: ReaderSchema,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_librarian_user)
-):
+async def create_reader(reader_data: ReaderSchema, db: Session = Depends(get_db), _=Depends(get_librarian_user)):
     reader = Reader(**reader_data.dict())
-    db.add(reader)
-    db.commit()
-    db.refresh(reader)
+    db.add(reader); db.commit(); db.refresh(reader)
     return reader
 
 @router.put("/{reader_id}", response_model=ReaderSchema)
-async def update_reader(
-    reader_id: int,
-    reader_data: ReaderSchema,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_librarian_user)
-):
+async def update_reader(reader_id: int, reader_data: ReaderSchema, db: Session = Depends(get_db), _=Depends(get_librarian_user)):
     reader = db.query(Reader).filter(Reader.id == reader_id).first()
     if not reader:
-        raise HTTPException(status_code=404, detail="Reader not found")
-    for key, value in reader_data.dict().items():
-        setattr(reader, key, value)
-    db.commit()
-    db.refresh(reader)
+        raise HTTPException(404, "Reader not found")
+    for key, val in reader_data.dict().items():
+        setattr(reader, key, val)
+    db.commit(); db.refresh(reader)
     return reader
 
 @router.delete("/{reader_id}")
-async def delete_reader(
-    reader_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_admin_user)
-):
+async def delete_reader(reader_id: int, db: Session = Depends(get_db), _=Depends(get_admin_user)):
     reader = db.query(Reader).filter(Reader.id == reader_id).first()
     if not reader:
-        raise HTTPException(status_code=404, detail="Reader not found")
-    db.delete(reader)
-    db.commit()
+        raise HTTPException(404, "Reader not found")
+    db.delete(reader); db.commit()
     return {"message": "Reader deleted"}
